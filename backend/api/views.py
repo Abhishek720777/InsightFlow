@@ -30,6 +30,7 @@ def set_auth_cookie(response, token):
 
 
 class RegisterView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -53,6 +54,7 @@ class RegisterView(APIView):
 
 
 class LoginView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -72,6 +74,7 @@ class LoginView(APIView):
 
 
 class LogoutView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -100,40 +103,38 @@ class UploadDatasetView(APIView):
             )
 
         try:
-            # Read file bytes into memory buffer then parse with pandas
-            content = file_obj.read()
-            df = pd.read_csv(io.BytesIO(content))
-
-            rows = len(df)
-            cols = len(df.columns)
-
-            # Save metadata to database
-            Dataset.objects.create(
+            # Save to dataset model
+            dataset = Dataset.objects.create(
                 user=request.user,
                 name=file_obj.name,
-                rows_processed=rows,
-                total_columns=cols,
+                file=file_obj
             )
-
-            # Build chart data based on real column stats
+            
+            # Read file with pandas
+            df = pd.read_csv(dataset.file.path)
+            rows = len(df)
+            cols = len(df.columns)
+            
+            # Determine column types
             numeric_cols = df.select_dtypes(include='number').columns.tolist()
-            chart_data = []
-            days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-            chunk = max(1, rows // 7)
-            for i, day in enumerate(days):
-                start = i * chunk
-                end = min(start + chunk, rows)
-                slice_df = df.iloc[start:end]
-                uploads = len(slice_df)
-                errors = int(slice_df.isnull().any(axis=1).sum()) if uploads > 0 else 0
-                chart_data.append({'name': day, 'uploads': uploads, 'errors': errors})
+            categorical_cols = df.select_dtypes(exclude='number').columns.tolist()
+            
+            columns_metadata = {
+                'numeric': numeric_cols,
+                'categorical': categorical_cols
+            }
+            
+            dataset.rows_processed = rows
+            dataset.total_columns = cols
+            dataset.columns_metadata = columns_metadata
+            dataset.save()
 
             return Response({
+                "dataset_id": dataset.id,
                 "rows_processed": rows,
                 "total_columns": cols,
-                "columns": list(df.columns),
+                "columns_metadata": columns_metadata,
                 "data_quality": f"{round((1 - df.isnull().values.mean()) * 100, 1)}%",
-                "chart_data": chart_data,
             })
 
         except Exception as e:
@@ -141,3 +142,46 @@ class UploadDatasetView(APIView):
                 {"error": f"Failed to parse CSV: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+class AnalyzeDatasetView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        dataset_id = request.data.get('dataset_id')
+        x_col = request.data.get('x_col')
+        y_col = request.data.get('y_col')
+        agg_func = request.data.get('agg_func', 'sum')
+
+        if not all([dataset_id, x_col, y_col]):
+            return Response({"error": "Missing parameters"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            dataset = Dataset.objects.get(id=dataset_id, user=request.user)
+            df = pd.read_csv(dataset.file.path)
+            
+            if x_col not in df.columns or y_col not in df.columns:
+                return Response({"error": "Invalid column names"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            # Aggregate data
+            if agg_func == 'sum':
+                agg_df = df.groupby(x_col)[y_col].sum().reset_index()
+            elif agg_func == 'mean':
+                agg_df = df.groupby(x_col)[y_col].mean().reset_index()
+            elif agg_func == 'count':
+                agg_df = df.groupby(x_col)[y_col].count().reset_index()
+            else:
+                return Response({"error": "Invalid aggregation function"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            # Limit to top 20 for charting to avoid overflowing the UI
+            agg_df = agg_df.head(20)
+            
+            chart_data = []
+            for _, row in agg_df.iterrows():
+                chart_data.append({
+                    'name': str(row[x_col]),
+                    'value': round(float(row[y_col]), 2) if pd.notnull(row[y_col]) else 0
+                })
+                
+            return Response({"chart_data": chart_data})
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
