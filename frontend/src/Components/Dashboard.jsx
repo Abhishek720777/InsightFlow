@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Upload, BarChart3, Database, TrendingUp, Activity, CheckCircle2, FileText, LogOut, Settings2, Table } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useNavigate, useLocation } from 'react-router-dom';
+import API_BASE from '../api';
 
 function Dashboard() {
   const [file, setFile] = useState(null);
@@ -38,7 +39,7 @@ function Dashboard() {
     setError(null);
     try {
       // First fetch the grid data (which now we will also use to get metadata)
-      const response = await fetch(`http://localhost:8000/api/datasets/${id}/data/`, {
+      const response = await fetch(`${API_BASE}/api/datasets/${id}/data/`, {
         credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to load dataset data');
@@ -99,7 +100,7 @@ function Dashboard() {
     formData.append('file', selectedFile);
 
     try {
-      const response = await fetch('http://localhost:8000/api/upload/', {
+      const response = await fetch(`${API_BASE}/api/upload/`, {
         method: 'POST',
         body: formData,
         credentials: 'include'
@@ -137,7 +138,7 @@ function Dashboard() {
   const loadGridData = async (id) => {
     setGridLoading(true);
     try {
-      const response = await fetch(`http://localhost:8000/api/datasets/${id}/data/`, {
+      const response = await fetch(`${API_BASE}/api/datasets/${id}/data/`, {
         credentials: 'include'
       });
       if (response.ok) {
@@ -157,7 +158,7 @@ function Dashboard() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:8000/api/analyze/', {
+      const response = await fetch(`${API_BASE}/api/analyze/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ dataset_id: datasetId, x_col: xCol, y_col: yCol, agg_func: aggFunc }),
@@ -187,7 +188,7 @@ function Dashboard() {
 
   const handleLogout = async () => {
     try {
-      await fetch('http://localhost:8000/api/auth/logout/', {
+      await fetch(`${API_BASE}/api/auth/logout/`, {
         method: 'POST',
         credentials: 'include'
       });

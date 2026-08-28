@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: insightflow-backend
+    env: python
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+    startCommand: gunicorn core.wsgi:application --bind 0.0.0.0:$PORT
+    envVars:
+      - key: DEBUG
+        value: False
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: insightflow-db
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: insightflow-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: insightflow-db
+          property: password
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: insightflow-db
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: insightflow-db
+          property: port
+      - key: ALLOWED_HOSTS
+        sync: false  # Set this manually in Render dashboard to your Render URL
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false  # Set this manually to your Vercel frontend URL
+
+databases:
+  - name: insightflow-db
+    databaseName: insightflow_db
+    user: admin
+    plan: free

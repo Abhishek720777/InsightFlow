@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, BarChart3, Database, LogOut, Trash2, ArrowRight, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import API_BASE from '../api';
 
 export default function DatasetsList() {
   const [datasets, setDatasets] = useState([]);
@@ -10,7 +11,7 @@ export default function DatasetsList() {
 
   const fetchDatasets = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/datasets/', {
+      const response = await fetch(`${API_BASE}/api/datasets/`, {
         credentials: 'include'
       });
       if (!response.ok) {
@@ -32,7 +33,7 @@ export default function DatasetsList() {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this dataset?")) return;
     try {
-      const response = await fetch(`http://localhost:8000/api/datasets/${id}/`, {
+      const response = await fetch(`${API_BASE}/api/datasets/${id}/`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -45,7 +46,7 @@ export default function DatasetsList() {
 
   const handleLogout = async () => {
     try {
-      await fetch('http://localhost:8000/api/auth/logout/', {
+      await fetch(`${API_BASE}/api/auth/logout/`, {
         method: 'POST',
         credentials: 'include'
       });
