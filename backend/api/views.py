@@ -25,6 +25,7 @@ def set_auth_cookie(response, token):
         value=token,
         httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
         samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
+        secure=settings.SIMPLE_JWT.get('AUTH_COOKIE_SECURE', False),
         max_age=60 * 60,  # 1 hour
     )
 
