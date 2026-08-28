@@ -185,3 +185,61 @@ class AnalyzeDatasetView(APIView):
             return Response({"chart_data": chart_data})
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+class ListDatasetsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        datasets = Dataset.objects.filter(user=request.user).order_by('-uploaded_at')
+        data = []
+        for ds in datasets:
+            data.append({
+                "id": ds.id,
+                "name": ds.name,
+                "uploaded_at": ds.uploaded_at,
+                "rows_processed": ds.rows_processed,
+                "total_columns": ds.total_columns,
+            })
+        return Response(data)
+
+class DeleteDatasetView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        try:
+            dataset = Dataset.objects.get(pk=pk, user=request.user)
+            if dataset.file:
+                dataset.file.delete()
+            dataset.delete()
+            return Response({"message": "Dataset deleted successfully"})
+        except Dataset.DoesNotExist:
+            return Response({"error": "Dataset not found"}, status=status.HTTP_404_NOT_FOUND)
+
+class DatasetDataView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            dataset = Dataset.objects.get(pk=pk, user=request.user)
+            if not dataset.file:
+                return Response({"error": "No file associated with this dataset"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            df = pd.read_csv(dataset.file.path)
+            # Replace NaN with None so it serializes cleanly to JSON null
+            df = df.where(pd.notnull(df), None)
+            
+            # Get first 100 rows
+            preview_df = df.head(100)
+            
+            columns = list(df.columns)
+            rows = preview_df.to_dict(orient='records')
+            
+            return Response({
+                "columns": columns,
+                "rows": rows,
+                "total_rows": len(df)
+            })
+        except Dataset.DoesNotExist:
+            return Response({"error": "Dataset not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

@@ -4,6 +4,7 @@ import Home from './Components/Home';
 import Login from './Components/Login';
 import Register from './Components/Register';
 import Dashboard from './Components/Dashboard';
+import DatasetsList from './Components/DatasetsList';
 
 // Wrapper component to pass navigation to Home (since it expects onGetStarted)
 function HomeWrapper() {
@@ -19,6 +20,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/datasets" element={<DatasetsList />} />
       </Routes>
     </Router>
   );

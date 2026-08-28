@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, BarChart3, Database, TrendingUp, Activity, CheckCircle2, FileText, LogOut, Settings2 } from 'lucide-react';
+import { Upload, BarChart3, Database, TrendingUp, Activity, CheckCircle2, FileText, LogOut, Settings2, Table } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 function Dashboard() {
   const [file, setFile] = useState(null);
@@ -12,11 +12,62 @@ function Dashboard() {
   const [error, setError] = useState(null);
   const [columnsMetadata, setColumnsMetadata] = useState(null);
   
+  // Data Grid state
+  const [gridData, setGridData] = useState(null);
+  const [gridLoading, setGridLoading] = useState(false);
+  
   const [xCol, setXCol] = useState('');
   const [yCol, setYCol] = useState('');
   const [aggFunc, setAggFunc] = useState('sum');
   
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    // If navigated from DatasetsList with a dataset ID
+    if (location.state?.loadDatasetId) {
+      loadSavedDataset(location.state.loadDatasetId);
+      // Clear state so it doesn't reload on every refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+
+  const loadSavedDataset = async (id) => {
+    setLoading(true);
+    setGridLoading(true);
+    setError(null);
+    try {
+      // First fetch the grid data (which now we will also use to get metadata)
+      const response = await fetch(`http://localhost:8000/api/datasets/${id}/data/`, {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to load dataset data');
+      const responseData = await response.json();
+      
+      setDatasetId(id);
+      setGridData({ columns: responseData.columns, rows: responseData.rows });
+      
+      setStats({
+        rows: responseData.total_rows,
+        cols: responseData.columns.length,
+        quality: 'N/A (Loaded from history)',
+      });
+
+      setColumnsMetadata(responseData.columns_metadata);
+
+      // Auto-select first available columns
+      const defaultX = responseData.columns_metadata?.categorical?.[0] || responseData.columns_metadata?.numeric?.[0] || '';
+      const defaultY = responseData.columns_metadata?.numeric?.[0] || '';
+      setXCol(defaultX);
+      setYCol(defaultY);
+      
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+      setGridLoading(false);
+    }
+  };
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -73,10 +124,30 @@ function Dashboard() {
       setXCol(defaultX);
       setYCol(defaultY);
       
+      // Fetch data grid preview for new uploads
+      loadGridData(responseData.dataset_id);
+      
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadGridData = async (id) => {
+    setGridLoading(true);
+    try {
+      const response = await fetch(`http://localhost:8000/api/datasets/${id}/data/`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const responseData = await response.json();
+        setGridData({ columns: responseData.columns, rows: responseData.rows });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setGridLoading(false);
     }
   };
 
@@ -138,7 +209,7 @@ function Dashboard() {
             <BarChart3 size={20} />
             Dashboard
           </div>
-          <div className="btn" style={{ justifyContent: 'flex-start', color: 'var(--text-secondary)', background: 'transparent' }}>
+          <div className="btn" style={{ justifyContent: 'flex-start', color: 'var(--text-secondary)', background: 'transparent', cursor: 'pointer' }} onClick={() => navigate('/datasets')}>
             <Database size={20} />
             Datasets
           </div>
@@ -275,7 +346,7 @@ function Dashboard() {
               </div>
             </div>
             
-            {loading ? (
+            {loading && !data ? (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px', color: 'var(--text-secondary)' }}>
                 Analyzing data...
               </div>
@@ -300,6 +371,46 @@ function Dashboard() {
             )}
           </div>
         )}
+
+        {/* Data Grid Section */}
+        {datasetId && (
+          <div className="card animate-fade-in delay-3" style={{ marginTop: '1.5rem', overflow: 'hidden' }}>
+            <div className="card-header">
+              <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Table size={20} /> Raw Data Preview (Top 100 rows)
+              </h3>
+            </div>
+            {gridLoading ? (
+               <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading grid data...</div>
+            ) : gridData?.rows && gridData.rows.length > 0 ? (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
+                  <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e5e7ee' }}>
+                    <tr>
+                      {gridData.columns.map(col => (
+                        <th key={col} style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: 600, whiteSpace: 'nowrap' }}>{col}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {gridData.rows.map((row, idx) => (
+                      <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        {gridData.columns.map(col => (
+                          <td key={col} style={{ padding: '0.75rem 1rem', color: '#12151a', whiteSpace: 'nowrap' }}>
+                            {row[col] !== null ? String(row[col]) : <span style={{ color: '#cbd5e1' }}>null</span>}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+               <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No raw data available</div>
+            )}
+          </div>
+        )}
+
       </main>
     </div>
   );
