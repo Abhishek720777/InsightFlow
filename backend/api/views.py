@@ -226,11 +226,12 @@ class DatasetDataView(APIView):
                 return Response({"error": "No file associated with this dataset"}, status=status.HTTP_400_BAD_REQUEST)
                 
             df = pd.read_csv(dataset.file.path)
-            # Replace NaN with None so it serializes cleanly to JSON null
-            df = df.where(pd.notnull(df), None)
             
             # Get first 100 rows
             preview_df = df.head(100)
+            
+            # Convert to object so None doesn't get coerced back to NaN
+            preview_df = preview_df.astype(object).where(pd.notnull(preview_df), None)
             
             columns = list(df.columns)
             rows = preview_df.to_dict(orient='records')
@@ -238,7 +239,8 @@ class DatasetDataView(APIView):
             return Response({
                 "columns": columns,
                 "rows": rows,
-                "total_rows": len(df)
+                "total_rows": len(df),
+                "columns_metadata": dataset.columns_metadata
             })
         except Dataset.DoesNotExist:
             return Response({"error": "Dataset not found"}, status=status.HTTP_404_NOT_FOUND)
