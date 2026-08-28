@@ -37,23 +37,46 @@ function Dashboard() {
     }
   };
 
-  const handleFile = (selectedFile) => {
+  const handleFile = async (selectedFile) => {
     if (!selectedFile.name.endsWith('.csv')) {
       setError('Please upload a valid CSV file.');
       return;
     }
     setError(null);
     setFile(selectedFile);
-    // Simulate upload
     setLoading(true);
-    setTimeout(() => {
+    
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      const response = await fetch('http://localhost:8000/api/upload/', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Upload failed or Unauthorized');
+      }
+      
+      const responseData = await response.json();
+      setData(responseData.chart_data);
+      // We could also store rows/columns in state but for now just showing chart updates
+    } catch (err) {
+      setError(err.message);
+    } finally {
       setLoading(false);
-      setData(mockData);
-    }, 1500);
+    }
   };
 
-  const handleLogout = () => {
-    // TODO: Clear cookie / logout logic
+  const handleLogout = async () => {
+    try {
+      await fetch('http://localhost:8000/api/auth/logout/', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (e) { }
     navigate('/login');
   };
 

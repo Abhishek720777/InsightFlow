@@ -10,13 +10,21 @@ export default function Login() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        // TODO: Implement actual JWT HttpOnlyCookie login logic here
-        // For now, simulating success
         try {
-            console.log('Logging in with HttpOnly cookie...');
+            const response = await fetch('http://localhost:8000/api/auth/login/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+                credentials: 'include'
+            });
+            
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Login failed');
+            }
             navigate('/dashboard');
         } catch (err) {
-            setError('Invalid credentials');
+            setError(err.message);
         }
     };
 
