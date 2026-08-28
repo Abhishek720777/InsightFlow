@@ -1,13 +1,13 @@
 :root {
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --accent-color: #3b82f6;
-  --accent-hover: #2563eb;
-  --border-color: #334155;
-  --success-color: #10b981;
-  --error-color: #ef4444;
+  --bg-primary: #faf9f6;
+  --bg-secondary: #ffffff;
+  --text-primary: #12151a;
+  --text-secondary: #4b5162;
+  --accent-color: #2954ff;
+  --accent-hover: #1f42cc;
+  --border-color: #e5e7ee;
+  --success-color: #00b894;
+  --error-color: #e11d48;
   --font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
@@ -30,6 +30,7 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-primary);
   font-weight: 600;
   margin-bottom: 0.5rem;
+  font-family: 'Space Grotesk', sans-serif;
 }
 
 p {
@@ -57,7 +58,7 @@ p {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: var(--accent-color);
+  color: var(--text-primary);
 }
 
 .main-content {
@@ -72,13 +73,13 @@ p {
   border-radius: 12px;
   padding: 1.5rem;
   border: 1px solid var(--border-color);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 6px -1px rgba(18, 21, 26, 0.05), 0 2px 4px -1px rgba(18, 21, 26, 0.03);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 15px -3px rgba(18, 21, 26, 0.08), 0 4px 6px -2px rgba(18, 21, 26, 0.04);
 }
 
 .card-header {
@@ -111,12 +112,12 @@ p {
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  background-color: rgba(30, 41, 59, 0.5);
+  background-color: rgba(250, 249, 246, 0.5);
 }
 
 .upload-zone:hover, .upload-zone.drag-active {
   border-color: var(--accent-color);
-  background-color: rgba(59, 130, 246, 0.1);
+  background-color: rgba(41, 84, 255, 0.04);
 }
 
 .upload-icon {
@@ -142,12 +143,12 @@ p {
 }
 
 .btn-primary {
-  background-color: var(--accent-color);
+  background-color: var(--text-primary);
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: var(--accent-hover);
+  background-color: #000;
 }
 
 .stats-card {
@@ -159,7 +160,7 @@ p {
 .stats-icon {
   padding: 1rem;
   border-radius: 12px;
-  background-color: rgba(59, 130, 246, 0.1);
+  background-color: rgba(41, 84, 255, 0.1);
   color: var(--accent-color);
 }
 
@@ -167,12 +168,14 @@ p {
   font-size: 0.875rem;
   color: var(--text-secondary);
   margin-bottom: 0.25rem;
+  font-family: 'Inter', sans-serif;
 }
 
 .stats-info p {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
 }
 
 /* Animations */
@@ -201,11 +204,11 @@ p {
 }
 
 .status-success {
-  background-color: rgba(16, 185, 129, 0.1);
+  background-color: rgba(0, 184, 148, 0.1);
   color: var(--success-color);
 }
 
 .status-error {
-  background-color: rgba(239, 68, 68, 0.1);
+  background-color: rgba(225, 29, 72, 0.1);
   color: var(--error-color);
 }
