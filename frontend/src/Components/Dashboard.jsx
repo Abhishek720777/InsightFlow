@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 function Dashboard() {
   const [file, setFile] = useState(null);
   const [data, setData] = useState(null);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -57,12 +58,16 @@ function Dashboard() {
       });
       
       if (!response.ok) {
-        throw new Error('Upload failed or Unauthorized');
+        throw new Error('Upload failed or Unauthorized — please log in first.');
       }
       
       const responseData = await response.json();
       setData(responseData.chart_data);
-      // We could also store rows/columns in state but for now just showing chart updates
+      setStats({
+        rows: responseData.rows_processed,
+        cols: responseData.total_columns,
+        quality: responseData.data_quality,
+      });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -158,21 +163,21 @@ function Dashboard() {
                 <div className="stats-icon"><FileText size={24} /></div>
                 <div className="stats-info">
                   <h3>Rows Processed</h3>
-                  <p>12,450</p>
+                  <p>{stats?.rows?.toLocaleString() ?? '—'}</p>
                 </div>
               </div>
               <div className="card stats-card">
                 <div className="stats-icon"><Database size={24} /></div>
                 <div className="stats-info">
                   <h3>Total Columns</h3>
-                  <p>14</p>
+                  <p>{stats?.cols ?? '—'}</p>
                 </div>
               </div>
               <div className="card stats-card">
                 <div className="stats-icon"><TrendingUp size={24} /></div>
                 <div className="stats-info">
                   <h3>Data Quality</h3>
-                  <p>98.5%</p>
+                  <p>{stats?.quality ?? '—'}</p>
                 </div>
               </div>
             </>
